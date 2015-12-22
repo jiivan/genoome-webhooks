@@ -7,7 +7,7 @@ import subprocess
 from flask import Flask
 from flask import request
 
-import secret_settings
+import settings_secret
 
 app = Flask(__name__)
 app.debug = True
@@ -21,12 +21,11 @@ executor = concurrent.futures.ProcessPoolExecutor(max_workers=2)
 #    )
 
 
-@app.route('/webhook', methods=['POST'])
 def deploy(repository, branch_name):
     env = {}
-    env['GIT_REPOSITORY'] = secret_settings.GITHUB_REPOSITORIES[repository]
+    env['GIT_REPOSITORY'] = settings_secret.GITHUB_REPOSITORIES[repository]
     env['GIT_BRANCH'] = branch_name
-    env.update(secret_settings.DEPLOY_ENVIRONMENTS[branch_name])
+    env.update(settings_secret.DEPLOY_ENVIRONMENTS[branch_name])
 
     cmd = ['/opt/genoome/genoome/genoome/deploy.sh']
     subprocess.call(cmd, env=env)
@@ -53,7 +52,7 @@ def webhook():
     repository = data['repository']['full_name']
 
     github_sig = request.headers['X-Hub-Signature']
-    my_sig = 'sha1=%s' % hmac.new(secret_settings.GITHUB_SECRETS[repository], request.body, 'sha1').hexdigest()
+    my_sig = 'sha1=%s' % hmac.new(settings_secret.GITHUB_SECRETS[repository], request.body, 'sha1').hexdigest()
     if not hmac.compare_digest(my_sig, github_sig):
         return "INVALID SIG"
 
@@ -65,6 +64,7 @@ def webhook():
 
 @app.route('/test')
 def test():
+    #deploy('jiivan/genoomy', 'dev_deploy')
     return 'OK'
 
 
