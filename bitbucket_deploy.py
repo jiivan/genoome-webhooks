@@ -52,7 +52,7 @@ def webhook():
     repository = data['repository']['full_name']
 
     github_sig = request.headers['X-Hub-Signature']
-    my_sig = 'sha1=%s' % hmac.new(settings_secret.GITHUB_SECRETS[repository], request.data, 'sha1').hexdigest()
+    my_sig = 'sha1=%s' % hmac.new(settings_secret.GITHUB_SECRETS[repository].encode('utf-8'), request.data, 'sha1').hexdigest()
     if not hmac.compare_digest(my_sig, github_sig):
         return "INVALID SIG"
 
