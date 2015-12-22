@@ -1,11 +1,16 @@
+import concurrent.futures
 import os
 import subprocess
 
 #from celery import Celery
 from flask import Flask
 from flask import request
+
+import secret_settings
+
 app = Flask(__name__)
 app.debug = True
+executor = concurrent.futures.ProcessPoolExecutor(max_workers=2)
 
 #if not app.debug:
 #    import logging
@@ -13,27 +18,18 @@ app.debug = True
 #    file_handler = RotatingFileHandler(
 #        '/var/log/'
 #    )
-CELERY_BROKER_URL = 'redis://localhost:6379/1'
 
-#def make_celery(app):
-#    celery = Celery(app.import_name, broker=CELERY_BROKER_URL)
-#    TaskBase = celery.Task
-#    class ContextTask(TaskBase):
-#        abstract = True
-#        def __call__(self, *args, **kwargs):
-#            with app.app_context():
-#                return TaskBase.__call(*args, **kwargs)
-#    celery.Task = ContextTask
-#    return celery
 
-#celery_app = make_celery(app)
+@app.route('/webhook', methods=['POST'])
+def deploy(repository, branch_name):
+    env = {}
+    env['GIT_REPOSITORY'] = secret_settings.GITHUB_REPOSITORIES[repository]
+    env['GIT_BRANCH'] = branch_name
+    env.update(secret_settings.DEPLOY_ENVIRONMENTS[branch_name])
 
-#@celery_app.task()
-def _dev_deploy_frontend():
-    subprocess.call(['/opt/dev_genoome/genoome/genoome/dev_frontend_deploy.sh'])
+    cmd = ['/opt/genoome/genoome/genoome/deploy.sh']
+    subprocess.call(cmd, env=env)
 
-def _deploy_frontend():
-    subprocess.call(['/opt/genoome/genoome/genoome/frontend_deploy.sh'])
 
 @app.route('/frontend-deploy', methods=['POST'])
 def frontend_deploy():
@@ -42,14 +38,27 @@ def frontend_deploy():
         source_branch = data['pullrequest']['source']['branch']
         dest_branch = data['pullrequest']['destination']['branch']
         if dest_branch == 'master' and source_branch != 'dev':
-            _deploy_frontend()
+            #XXX
+            pass
     return 'OK'
 
 
-@app.route('/dev-deploy', methods=['POST'])
-def dev_deploy():
-    if request.method == 'POST' and request.headers['X-GitHub-Event'] == 'push':
-        _dev_deploy_frontend()
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    if request.headers['X-GitHub-Event'] != 'push':
+        return "INVALID EVENT"
+
+    data = request.get_json()
+    repository = data['repository']['full_name']
+
+    github_sig = request.headers['X-Hub-Signature']
+    my_sig = 'sha1=%s' % hmac.new(secret_settings.GITHUB_SECRETS[repository], request.body, 'sha1').hexdigest()
+    if not hmac.compare_digest(my_sig, github_sig):
+        return "INVALID SIG"
+
+    # branch_name from "ref": "refs/heads/<branch_name>"
+    branch_name = data['ref'].rsplit('/', 1)[-1]
+    executor.submit(deploy, repository, branch_name)
     return "OK"
 
 
@@ -59,5 +68,5 @@ def test():
 
 
 if __name__ == '__main__':
-    app.debug = True
     app.run()
+    executor.shutdown(wait=False)
