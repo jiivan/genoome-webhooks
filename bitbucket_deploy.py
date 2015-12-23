@@ -48,6 +48,8 @@ def webhook():
         return "INVALID EVENT"
 
     data = request.get_json()
+    if data is None:
+        return "NO DATA"
     repository = data['repository']['full_name']
 
     github_sig = request.headers['X-Hub-Signature']
