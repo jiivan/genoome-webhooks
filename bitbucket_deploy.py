@@ -21,6 +21,7 @@ app.debug = True
 
 
 def deploy(repository, branch_name):
+    print('In deploy...')
     env = {}
     env['GIT_REPOSITORY'] = settings_secret.GITHUB_REPOSITORIES[repository]
     env['GIT_BRANCH'] = branch_name
@@ -44,17 +45,21 @@ def frontend_deploy():
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
-    if request.headers['X-GitHub-Event'] != 'push':
+    github_event = request.headers['X-GitHub-Event']
+    if github_event != 'push':
+        print('Invalid event: %s' % github_event)
         return "INVALID EVENT"
 
     data = request.get_json()
     if data is None:
+        print('No data in request')
         return "NO DATA"
     repository = data['repository']['full_name']
 
     github_sig = request.headers['X-Hub-Signature']
     my_sig = 'sha1=%s' % hmac.new(settings_secret.GITHUB_SECRETS[repository].encode('utf-8'), request.data, hashlib.sha1).hexdigest()
     if not hmac.compare_digest(my_sig, github_sig):
+        print('Invalid sig: %s' % github_sig)
         return "INVALID SIG"
 
     # branch_name from "ref": "refs/heads/<branch_name>"
