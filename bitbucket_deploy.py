@@ -1,4 +1,3 @@
-import concurrent.futures
 import hashlib
 import hmac
 import os
@@ -12,7 +11,6 @@ import settings_secret
 
 app = Flask(__name__)
 app.debug = True
-executor = concurrent.futures.ProcessPoolExecutor(max_workers=2)
 
 #if not app.debug:
 #    import logging
@@ -59,7 +57,7 @@ def webhook():
 
     # branch_name from "ref": "refs/heads/<branch_name>"
     branch_name = data['ref'].rsplit('/', 1)[-1]
-    executor.submit(deploy, repository, branch_name)
+    deploy(repository, branch_name)
     return "OK"
 
 
@@ -71,4 +69,3 @@ def test():
 
 if __name__ == '__main__':
     app.run()
-    executor.shutdown(wait=False)
