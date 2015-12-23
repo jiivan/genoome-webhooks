@@ -31,6 +31,15 @@ def deploy(repository, branch_name):
     subprocess.call(cmd, env=env)
 
 
+def ping(data):
+    """When you create a new webhook, we'll send you a simple ping event to let you know you've set up the webhook correctly.
+    https://developer.github.com/webhooks/#ping-event"""
+
+    print('PING: %s %s' % (data['zen'], data['hook_id']))
+    print('HOOK: %s' % data['hook'])
+    return 'PONG'
+
+
 @app.route('/frontend-deploy', methods=['POST'])
 def frontend_deploy():
     data = request.get_json()
@@ -46,6 +55,8 @@ def frontend_deploy():
 @app.route('/webhook', methods=['POST'])
 def webhook():
     github_event = request.headers['X-GitHub-Event']
+    if github_event == 'ping':
+        return ping(request.get_json())
     if github_event != 'push':
         print('Invalid event: %s' % github_event)
         return "INVALID EVENT"
