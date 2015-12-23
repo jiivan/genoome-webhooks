@@ -27,7 +27,7 @@ def deploy(repository, branch_name):
     env['GIT_BRANCH'] = branch_name
     env.update(settings_secret.DEPLOY_ENVIRONMENTS[branch_name])
 
-    cmd = ['/opt/genoome/genoome/genoome/deploy.sh']
+    cmd = ['/opt/genoome/genoome-deploy/deploy.sh']
     subprocess.call(cmd, env=env)
 
 
