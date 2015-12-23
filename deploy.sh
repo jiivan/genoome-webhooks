@@ -4,8 +4,10 @@ PYPATH=$VENVPATH/bin/python;
 GULPPATH=$VENVPATH/bin/gulp;
 
 source $VENVPATH/bin/activate;
-cd $ROOT_DIR/genoome/genoome/ && sudo git checkout -- . && \
+cd $ROOT_DIR/genoome/genoome/ && \
+sudo git checkout -- . && \
 git pull $GIT_REPOSITORY $GIT_BRANCH && \
+echo "`date` $GIT_COMMIT" > $ROOT_DIR/genoome/genoome/templates/includes/version.txt && \
 cd $ROOT_DIR/genoome/ && \
 npm install && \
 ./node_modules/.bin/bower install && \

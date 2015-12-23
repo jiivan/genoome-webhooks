@@ -3,7 +3,6 @@ import hmac
 import os
 import subprocess
 
-#from celery import Celery
 from flask import Flask
 from flask import request
 
@@ -20,11 +19,12 @@ app.debug = True
 #    )
 
 
-def deploy(repository, branch_name):
+def deploy(repository, branch_name, latest_commit):
     print('In deploy...')
     env = {}
     env['GIT_REPOSITORY'] = settings_secret.GITHUB_REPOSITORIES[repository]
     env['GIT_BRANCH'] = branch_name
+    env['GIT_COMMIT'] = latest_commit
     try:
         env.update(settings_secret.DEPLOY_ENVIRONMENTS[branch_name])
     except KeyError:
@@ -79,13 +79,12 @@ def webhook():
 
     # branch_name from "ref": "refs/heads/<branch_name>"
     branch_name = data['ref'].rsplit('/', 1)[-1]
-    deploy(repository, branch_name)
+    deploy(repository, branch_name, data['after'])
     return "OK"
 
 
 @app.route('/test')
 def test():
-    #deploy('jiivan/genoomy', 'dev_deploy')
     return 'OK'
 
 
