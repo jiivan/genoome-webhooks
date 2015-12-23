@@ -22,6 +22,7 @@ app.debug = True
 def deploy(repository, branch_name, latest_commit):
     print('In deploy...')
     env = {}
+    env.update(os.environ)
     env['GIT_REPOSITORY'] = settings_secret.GITHUB_REPOSITORIES[repository]
     env['GIT_BRANCH'] = branch_name
     env['GIT_COMMIT'] = latest_commit
