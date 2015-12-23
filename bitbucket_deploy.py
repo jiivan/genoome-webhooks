@@ -25,7 +25,11 @@ def deploy(repository, branch_name):
     env = {}
     env['GIT_REPOSITORY'] = settings_secret.GITHUB_REPOSITORIES[repository]
     env['GIT_BRANCH'] = branch_name
-    env.update(settings_secret.DEPLOY_ENVIRONMENTS[branch_name])
+    try:
+        env.update(settings_secret.DEPLOY_ENVIRONMENTS[branch_name])
+    except KeyError:
+        print('Ignoring branch: %s' % branch_name)
+        return
 
     cmd = ['/opt/genoome/genoome-deploy/deploy.sh']
     subprocess.call(cmd, env=env)
